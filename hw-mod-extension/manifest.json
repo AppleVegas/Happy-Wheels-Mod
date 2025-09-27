@@ -1,0 +1,19 @@
+{
+  "name": "Happy Wheels Mod",
+  "description": "Happy Wheels Mod Menu",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "permissions": ["activeTab", "scripting"],
+  "content_scripts": [
+    {
+      "matches": ["https://totaljerkface.com/happy_wheels.tjf*"],
+      "js": ["content.js"],
+      "run_at": "document_end",
+	  "world": "MAIN"
+    }
+  ]
+}
