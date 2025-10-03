@@ -1,69 +1,71 @@
+// Inject hwmod.js first
+const hwmodScript = document.createElement('script');
+hwmodScript.src = chrome.runtime.getURL('hwmod.js');
+hwmodScript.onload = function() { this.remove(); };
+(document.head || document.documentElement).appendChild(hwmodScript);
 
-(self || this).HWMod = {};
-const HWMod = (self || this).HWMod;
-HWMod.onEvent = {}
+// Inject features.js after hwmod.js
+const featuresScript = document.createElement('script');
+featuresScript.src = chrome.runtime.getURL('features.js');
+featuresScript.onload = function() { this.remove(); };
+(document.head || document.documentElement).appendChild(featuresScript);
 
-HWMod.dispatchEvent = null;
+let features = [];
+let activeFeatures = new Set();
 
-HWMod.dispatchEvent_hook = function(e) {
-    if ( HWMod.onEvent[e.type] )
-        return HWMod.onEvent[e.type].call(this, e)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
-    return HWMod.dispatchEvent.call(this, e);
-}
-
-(function() {
-  'use strict';
-
-  const funcId = 6
-  const [gameFrame]= document.getElementById('game').children
-  const gameWindow = gameFrame.contentWindow;
-
-  let custom_webpackChunkhappy_wheels = [];
-
-  Object.defineProperty(gameWindow, 'webpackChunkhappy_wheels', {
-    get: function() {
-      return custom_webpackChunkhappy_wheels;
-    },
-    set: function(newValue) {
-      if (newValue[0] && !HWMod.dispatchEvent)
-      {
-        const oldfunc = newValue[0][1][funcId];
-        newValue[0][1][funcId] = function(e, t, n) {
-          const result = oldfunc(e, t, n)
-          for (const [key, value] of Object.entries(t)) {
-
-            if (!value.prototype)
-                continue
-
-            if (Object.hasOwn(value.prototype, "dispatchEvent"))
-            {
-              HWMod.dispatchEvent = value.prototype.dispatchEvent;
-              value.prototype.dispatchEvent = HWMod.dispatchEvent_hook;
-              break;
-            }
-
-          }
-          return result;
+  switch (request.action) {
+    case 'getFeatures':
+      sendResponse({
+        action: 'featuresUpdate',
+        features: features,
+        activeFeatures: Array.from(activeFeatures)
+      });
+      break;
+      
+    case 'toggleFeature':
+      const feature = features.find(f => f.id === request.featureId);
+      if (feature) {
+        if (request.enabled) {
+          activeFeatures.add(request.featureId);
+        } else {
+          activeFeatures.delete(request.featureId);
         }
+        
+        // Send toggle event to the game context
+        const toggleEvent = new CustomEvent('HWModToggleFeature', {
+          detail: {
+            featureId: request.featureId,
+            enabled: request.enabled
+          }
+        });
+        window.dispatchEvent(toggleEvent);
+        
+        sendResponse({ success: true });
+      } else {
+        sendResponse({ success: false, error: 'Feature not found' });
       }
-
-      custom_webpackChunkhappy_wheels = newValue;
-    },
-    configurable: false,
-    enumerable: true
-  });
-})();
-
-HWMod.onEvent.enterFrame = function (e) {
-  if (e.currentTarget && e.currentTarget._character)
-  {
-    if (e.currentTarget._character._dead)
-      e.currentTarget._character._dead = false;
-  
-    e.currentTarget._character.boostMax = 9999
-    e.currentTarget.m_world.m_gravity.y = 0;
+      break;
+      
+    case 'setting':
+      sendResponse({ success: true });
+      break;
+      
+    default:
+      sendResponse({ success: false, error: 'Unknown action' });
   }
+  
+  return true;
+});
 
-  return HWMod.dispatchEvent.call(this, e);
-}
+window.addEventListener("HWModAddFeature", function(event) {
+  features.push(event.detail);
+
+  try {
+    chrome.runtime.sendMessage({
+      action: 'featureAdded',
+      feature: event.detail
+    });
+  } catch (e) {}
+}, false);

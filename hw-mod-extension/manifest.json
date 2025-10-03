@@ -7,13 +7,18 @@
     "default_popup": "popup.html",
     "default_icon": "icon.png"
   },
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "nativeMessaging"],
   "content_scripts": [
     {
       "matches": ["https://totaljerkface.com/happy_wheels.tjf*"],
       "js": ["content.js"],
-      "run_at": "document_end",
-	  "world": "MAIN"
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+    "resources": ["hwmod.js", "features.js"],
+    "matches": ["https://totaljerkface.com/*"]
     }
   ]
 }
