@@ -26,6 +26,10 @@ class Vector2D {
   magnitude() {
       return Math.sqrt(this.x * this.x + this.y * this.y);
   }
+
+  magnitudeSqr() {
+    return this.x * this.x + this.y * this.y;
+}
   
   normalize() {
       const mag = this.magnitude();
@@ -42,6 +46,10 @@ class Vector2D {
   distanceTo(v) {
       return this.subtract(v).magnitude();
   }
+
+  distanceToSqr(v) {
+    return this.subtract(v).magnitudeSqr();
+}
   
   static zero() {
       return new Vector2D(0, 0);
@@ -129,38 +137,58 @@ function freezeCamera(game, freeze) {
   prevFocus = null;
 }
 
+function findClosestInSphere(game, pos, radius) {
+  if (!game.m_world) return null;
+
+  let closestBody = null;
+  let currentBody = game.m_world.m_bodyList;
+
+  while (currentBody.m_next) {
+    const cur_position = currentBody.GetPosition();
+    const cur_vector = new Vector2D(cur_position.x, cur_position.y);
+    const distance = cur_vector.distanceToSqr(pos);
+    
+    if (distance < (radius**2)) {
+      if (!closestBody) {
+        closestBody = currentBody;
+        continue;
+      }
+      
+      const grabbed_position = closestBody.GetPosition();
+      const grabbed_vector = new Vector2D(grabbed_position.x, grabbed_position.y);
+      const grabbed_distance = grabbed_vector.distanceToSqr(pos);
+
+      if (grabbed_distance < distance)
+        closestBody = currentBody;
+    }
+    currentBody = currentBody.m_next;
+  }
+
+  return closestBody;
+}
+
 // Grab - Grab everything with a mouse
 let grabbedBody = null;
 HWMod.addFeature("Grab (using mouse)", "bool", {}, (e) => {
-  if (!HWMod.isMouseDown(0) || !e.currentTarget) {
+  const game = e.currentTarget;
+
+  if (!HWMod.isMouseDown(0) || !game || !game.m_world) {
     if (grabbedBody) {
       grabbedBody = null;
+      //freezeCamera(game, false);
     }
-    //freezeCamera(e.currentTarget, false);
     return;
   } 
 
-  const mouse_world_position = getMouseWorldPosition(e.currentTarget);
+  const mouse_world_position = getMouseWorldPosition(game);
   const mouse_vector = new Vector2D(mouse_world_position.x, mouse_world_position.y);
-  const grab_distance = 0.1;
+  const grab_distance = 0.3;
   const strength = 30;
   const maxForce = 80;
 
   if (!grabbedBody) {
-    let currentBody = e.currentTarget.m_world.m_bodyList;
-
-    while (currentBody.m_next) {
-      const cur_position = currentBody.GetPosition();
-      const cur_vector = new Vector2D(cur_position.x, cur_position.y);
-
-      if (cur_vector.distanceTo(mouse_vector) < grab_distance) {
-        grabbedBody = currentBody;
-        break;
-      }
-
-      currentBody = currentBody.m_next;
-    }
-    //freezeCamera(e.currentTarget, true);
+    grabbedBody = findClosestInSphere(game, mouse_vector, grab_distance)
+    //freezeCamera(game, true);
   }
   
   if (grabbedBody) {
