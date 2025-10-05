@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       if (response && response.action === 'featuresUpdate') {
-        console.log('Features updated:', response.features);
         features = response.features || [];
         activeFeatures = new Set(response.activeFeatures || []);
         updateFeaturesDisplay();
@@ -44,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Function to create feature toggle element
-  function createFeatureToggle(feature) {
+  function createFeatureEntry(feature) {
     const toggleDiv = document.createElement('div');
     toggleDiv.className = 'feature-toggle';
     
@@ -151,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     features.forEach(feature => {
-      const toggleElement = createFeatureToggle(feature);
+      const toggleElement = createFeatureEntry(feature);
       featuresContainer.appendChild(toggleElement);
     });
     
@@ -168,12 +167,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   switch (request.action) {
     case 'featureAdded':
-      // Handle dynamic feature additions
-      console.log('New feature added while popup is open:', request.feature);
       features.push(request.feature);
+
       if (window.updateFeaturesDisplay) {
         window.updateFeaturesDisplay();
       }
+
       break;
       
     default:

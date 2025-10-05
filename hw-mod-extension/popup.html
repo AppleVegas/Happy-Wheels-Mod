@@ -46,6 +46,11 @@
       margin-bottom: 15px;
       color: #333;
     }
+    h3 {
+      margin-top: 0px;
+      margin-bottom: 5px;
+      color: #333;
+    }
     .status {
       text-align: center;
       margin: 10px 0;
@@ -58,22 +63,12 @@
   <body>
     <h2>Happy Wheels Mod Menu</h2>
     <div class="status" id="status">Loading features...</div>
-    
     <div class="feature-group">
-      <h3>Mod Features</h3>
-      <div id="features-container">
-        <!-- Features will be dynamically added here -->
+      <h3>Features</h3>
+      <div id="features-container"></div>
+        <!-- dynamically added features -->
       </div>
     </div>
-    
-    <div class="feature-group">
-      <h3>General</h3>
-      <div class="feature-toggle">
-        <input type="checkbox" id="hwmod_bool_enabled" name="hwmod_bool_enabled" checked />
-        <label for="hwmod_bool_enabled">Mod Menu Enabled</label>
-      </div>
-    </div>
-    
     <script src="popup.js"></script>
   </body>
 </html>
